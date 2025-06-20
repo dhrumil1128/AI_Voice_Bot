@@ -5,6 +5,7 @@ import requests
 from streamlit_mic_recorder import mic_recorder
 from dotenv import load_dotenv
 
+
 load_dotenv() # Load environment variables from .env file
 # --- API Key & Endpoint Setup ---
 
@@ -24,8 +25,7 @@ DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
 
 # --- Text-to-Speech (TTS) API (ElevenLabs) ---
 # --- Text-to-Speech (TTS) API (ElevenLabs) ---
-# Your ElevenLabs API key
-TTS_API_KEY = "sk_d0aede267130f3a74934d126c8a16ff4551df304892fe8b4" # Consistent naming for clarity
+TTS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 # Confirmed active voice ID from your ElevenLabs console
 ELEVENLABS_VOICE_ID = "UgBBYS2sOqTuMpoF3BR0"
 TTS_API_URL = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
