@@ -5,6 +5,7 @@ import requests
 from streamlit_mic_recorder import mic_recorder
 from dotenv import load_dotenv
 
+
 load_dotenv() # Load environment variables from .env file
 # --- API Key & Endpoint Setup ---
 
