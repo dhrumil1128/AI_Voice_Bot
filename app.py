@@ -23,8 +23,7 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
 
 # --- Text-to-Speech (TTS) API (ElevenLabs) ---
-# --- Text-to-Speech (TTS) API (ElevenLabs) ---
- --- Text-to-Speech (TTS) API (ElevenLabs) ---
+# --- Text-to-Speech (TTS) API (ElevenLabs) --
 # Your ElevenLabs API key
 TTS_API_KEY = "sk_d0aede267130f3a74934d126c8a16ff4551df304892fe8b4"
 # Confirmed active voice ID from your ElevenLabs console
