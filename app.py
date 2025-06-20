@@ -29,12 +29,14 @@ if GEMINI_API_KEY:
         genai.configure(api_key=GEMINI_API_KEY)
         gemini_model = genai.GenerativeModel('gemini-1.5-flash')
     except Exception as e:
-        st.error(f"Failed to configure Gemini API: {e}. Check GEMINI_API_KEY.")
+        st.warning(f"Failed to configure Gemini API: {e}. Double-check your GEMINI_API_KEY's validity.")
 else:
-    st.error("GEMINI_API_KEY not found in environment variables. Please check your .env file or deployment secrets.")
+    st.info("💡 **Gemini API Key Missing:** The AI conversation will not work without it. Please add `GEMINI_API_KEY` to your environment variables or `.env` file (e.g., in Render's secrets).")
 
 # --- Speech-to-Text (STT) API (Deepgram) ---
 DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
+if not DEEPGRAM_API_KEY:
+    st.info("💡 **Deepgram API Key Missing:** Speech-to-text will not work. Please add `DEEPGRAM_API_KEY` to your environment variables or `.env` file.")
 
 # --- Edge TTS Voice Configuration ---
 # Choose a male voice from Edge TTS. Common ones include:
@@ -56,11 +58,14 @@ Click the **"Start recording"** button, speak your question, then click **"Stop 
 """)
 
 # --- Persona Instructions ---
-persona_instructions = """
+# UPDATED INITIAL GREETING TEXT
+initial_greeting_text = "Hello! I'm Dhrumil Pawar. This bot showcases my AI and system development work. Feel free to ask about my projects, skills, or problem-solving approach. I'm eager to share!"
+
+persona_instructions = f"""
 You are an AI assistant embodying the persona of Dhrumil Pawar.
 
 **🎙️ First Greeting (Universal):**
-When starting a conversation or receiving the first prompt, begin with: "Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."
+When starting a conversation or receiving the first prompt, begin with: "{initial_greeting_text}"
 Do not repeat this greeting in subsequent turns.
 
 ---
@@ -150,7 +155,7 @@ These are Dhrumil's prepared answers to common technical and company-specific qu
 **🎤 Bonus: “Anything else you’d like to add?”**
 “Yeah — in short, I’ve had real hands-on experience with the full AI/ML pipeline — from writing clean Python code to building intelligent agents and visual dashboards. I love using tech to solve real problems, and I’ve built, shipped, and improved projects that reflect that.”
 
-**🏡 Q: “What do you know about Home.LLC?”**
+**� Q: “What do you know about Home.LLC?”**
 “Sure — what really stood out to me about Home.LLC is the mission. You're helping people who are financially ready for homeownership, but just can’t afford the down payment — and that’s a real, widespread problem.
 I love that instead of offering loans, you partner with homebuyers by investing alongside them — and then share in the home’s future value. It’s such a smart and ethical model. It supports people without locking them into debt, and that’s rare in today’s financial space.
 I also know the company was founded in 2019, and you’ve built a focused, mission-driven team of about 30 to 50 people. The size and structure suggest a lot of agility, innovation, and trust in each individual — and that’s the kind of environment where I thrive.”
@@ -172,12 +177,14 @@ Looking forward to what’s next — and thanks again for listening.”
 
 Respond as Dhrumil would: friendly, helpful, professional, and reflecting Dhrumil's interests and approach to technology based on all the provided information. When asked about projects, contact, technical questions, Home.LLC, or for a concluding statement, feel free to mention the relevant links and details directly from the provided sections.
 """
+
 # --- Initialize Chat History (for conversational memory) ---
+# UPDATED INITIAL GREETING TEXT HERE
 if "chat_session" not in st.session_state:
     if gemini_model:
         st.session_state.chat_session = gemini_model.start_chat(history=[
             {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": ["Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."]}
+            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
         ])
     else:
         st.session_state.chat_session = None
@@ -185,11 +192,13 @@ if "chat_session" not in st.session_state:
 if "display_messages" not in st.session_state:
     st.session_state.display_messages = []
     if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": "Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."})
+        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
 
 # --- Display Chat Messages from History ---
 for message in st.session_state.display_messages:
-    with st.chat_message(message["role"]):
+    # UPDATED: Use custom avatar for assistant messages
+    avatar = "👨‍💻" if message["role"] == "assistant" else "user"
+    with st.chat_message(message["role"], avatar=avatar):
         st.write(message["content"])
 
 # --- Initialize recorder key for mic_recorder (NEW) ---
@@ -260,7 +269,7 @@ if recorded_audio_dict:
                                     voice=EDGE_TTS_MALE_VOICE_ID
                                 )
                                 
-                                # Save to file first (more reliable than streaming directly from async generator)
+                                # Save to file first (more reliable than streaming)
                                 # This directly saves the audio to the file
                                 asyncio.run(voice.save(temp_file))
                                 
@@ -294,16 +303,43 @@ if st.button("Clear Chat"):
     if gemini_model:
         st.session_state.chat_session = gemini_model.start_chat(history=[
             {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": ["Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."]}
+            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
         ])
     else:
         st.session_state.chat_session = None
 
     st.session_state.display_messages = []
     if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": "Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."})
+        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
 
     st.session_state.recorder_key += 1
     st.rerun()
 
 st.write("Ready for your next question!")
+
+# --- FOOTER ---
+st.markdown("---") # A horizontal line to separate content from footer
+st.markdown(
+    """
+    <style>
+    .footer {
+        font-size: 0.8em;
+        text-align: center;
+        color: #888888;
+        margin-top: 30px;
+    }
+    .footer a {
+        color: #888888;
+        text-decoration: none;
+    }
+    .footer a:hover {
+        text-decoration: underline;
+    }
+    </style>
+    <div class="footer">
+        Dhrumil's Voice Persona Bot <br>
+        &copy; 2025 Dhrumil Pawar. All rights reserved. <br>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
