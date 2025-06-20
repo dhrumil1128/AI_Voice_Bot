@@ -274,10 +274,10 @@ if recorded_audio_dict:
                         model="eleven_monolingual_v1"
                        )
                         
-                        if speech_audio_bytes:
-                            st.audio(io.BytesIO(speech_audio_bytes), format="audio/mpeg", autoplay=True) # ElevenLabs typically returns MP3
-                        else:
-                            st.warning("No voice response generated.") # Simplified message
+                      if speech_audio_bytes:
+                          st.audio(io.BytesIO(speech_audio_bytes), format="audio/mpeg", autoplay=True) # ElevenLabs typically returns MP3
+                      else:
+                          st.warning("No voice response generated.") # Simplified message
 
                 except requests.exceptions.RequestException as e:
                     st.error(f"Error generating Dhrumil's voice: {e}") # Simplified error message
