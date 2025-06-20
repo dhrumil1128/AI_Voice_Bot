@@ -12,7 +12,7 @@ load_dotenv() # Load environment variables from .env file
 # GitHub Marketplace LLM (GPT-4.1)
 # IMPORTANT: Replace YOUR_GITHUB_TOKEN_HERE with your actual token from GitHub Marketplace.
 # This token authorizes your calls to the GPT-4.1 model on GitHub's Azure endpoint.
-GITHUB_TOKEN ="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"
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # ✅ Use environment variable
 GITHUB_LLM_BASE_URL = "https://models.github.ai/inference"
 GITHUB_LLM_ENDPOINT_PATH = "/chat/completions"
 GITHUB_LLM_API_URL = f"{GITHUB_LLM_BASE_URL}{GITHUB_LLM_ENDPOINT_PATH}"
