@@ -3,45 +3,50 @@ import os
 import io
 import requests
 from streamlit_mic_recorder import mic_recorder
-from dotenv import load_dotenv # Make sure this is installed: pip install python-dotenv
+from dotenv import load_dotenv
 
 # Import the Google Generative AI library
-import google.generativeai as genai # Make sure this is installed: pip install google-generativeai
-# Import the ElevenLabs library
-from elevenlabs import generate, set_api_key, voices # Add this line
+import google.generativeai as genai
+
+# Import the ElevenLabs client and necessary objects for the V2 API
+# Ensure you have 'elevenlabs' installed: pip install elevenlabs
+from elevenlabs.client import ElevenLabs
+from elevenlabs import Voice, VoiceSettings
+
 # Load environment variables from .env file
-# This line is CRUCIAL for local development if your keys are in .env
-load_dotenv() 
+load_dotenv()
 
 # --- API Key & Endpoint Setup ---
-# Retrieve API keys from environment variables (from .env file locally)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
-ELEVENLABS_API_KEY = os.getenv("TTS_API_KEY")
+ELEVENLABS_API_KEY = os.getenv("TTS_API_KEY") # This is the key name that works locally
 
 # --- Configure Google Gemini API ---
+gemini_model = None
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception as e:
+        st.error(f"Failed to configure Gemini API: {e}. Check GEMINI_API_KEY.")
 else:
-    st.error("GEMINI_API_KEY not found in environment variables. Please check your .env file.")
-    gemini_model = None # Set to None to prevent errors if key is missing
-    
-    
-# --- Configure ElevenLabs API KEY for the library ---
+    st.error("GEMINI_API_KEY not found in environment variables. Please check your .env file or deployment secrets.")
+
+# --- Configure ElevenLabs Client ---
+elevenlabs_client = None
 if ELEVENLABS_API_KEY:
-    set_api_key(ELEVENLABS_API_KEY) # Set the API key for the elevenlabs library
+    try:
+        elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+    except Exception as e:
+        st.error(f"Failed to initialize ElevenLabs client: {e}. Check TTS_API_KEY.")
 else:
-    st.error("ElevenLabs API Key (TTS_API_KEY) not found in environment variables. Please check your .env file or Render secrets.")
-    
-    
-    
+    st.error("ElevenLabs API Key (TTS_API_KEY) not found in environment variables. Please check your .env file or deployment secrets.")
+
 # --- Speech-to-Text (STT) API (Deepgram) ---
 DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
 
-# --- Text-to-Speech (TTS) API (ElevenLabs) ---
+# --- Text-to-Speech (TTS) API (ElevenLabs) Voice ID ---
 ELEVENLABS_VOICE_ID = "UgBBYS2sOqTuMpoF3BR0"
-TTS_API_URL = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
@@ -176,23 +181,19 @@ Respond as Dhrumil would: friendly, helpful, professional, and reflecting Dhrumi
 """
 
 # --- Initialize Chat History (for conversational memory) ---
-# Gemini's chat history is managed by `start_chat()`
 if "chat_session" not in st.session_state:
-    if gemini_model: # Only initialize if model is configured
+    if gemini_model:
         st.session_state.chat_session = gemini_model.start_chat(history=[
             {"role": "user", "parts": [persona_instructions]},
             {"role": "model", "parts": ["Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."]}
         ])
     else:
-        st.session_state.chat_session = None # Or handle error appropriately
+        st.session_state.chat_session = None
 
-# Also manage a separate history for Streamlit's display (mimicking st.chat_message)
 if "display_messages" not in st.session_state:
     st.session_state.display_messages = []
     if st.session_state.chat_session:
-        # Add the initial bot greeting to display messages
         st.session_state.display_messages.append({"role": "assistant", "content": "Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."})
-
 
 # --- Display Chat Messages from History ---
 for message in st.session_state.display_messages:
@@ -207,8 +208,8 @@ if "recorder_key" not in st.session_state:
 recorded_audio_dict = mic_recorder(
     start_prompt="Start Recording",
     stop_prompt="Stop Recording",
-    key=f"recorder_{st.session_state.recorder_key}", # Dynamic key to reset component
-    format="wav" # streamlit_mic_recorder returns WAV bytes
+    key=f"recorder_{st.session_state.recorder_key}",
+    format="wav"
 )
 
 if recorded_audio_dict:
@@ -216,14 +217,14 @@ if recorded_audio_dict:
     st.audio(io.BytesIO(audio_bytes), format="audio/wav")
 
     stt_data = None
-    ai_response = "I apologize, an error occurred." # Default error message
+    ai_response = "I apologize, an error occurred."
 
     try:
         # --- Speech-to-Text (STT) via Deepgram ---
         with st.spinner("Transcribing your speech..."):
             if not DEEPGRAM_API_KEY:
                 st.error("Deepgram API Key is not set. Please add it to your .env file or environment variables.")
-                st.stop() # Stop execution if key is missing
+                st.stop()
 
             deepgram_headers = {
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
@@ -239,7 +240,7 @@ if recorded_audio_dict:
             if not transcript:
                 st.warning("Could not transcribe your audio. No text found.")
                 st.json(stt_data)
-                transcript = None # Ensure transcript is None if empty
+                transcript = None
 
         if transcript:
             st.info(f"You said: \"{transcript}\"")
@@ -249,43 +250,42 @@ if recorded_audio_dict:
             if gemini_model and st.session_state.chat_session:
                 try:
                     with st.spinner("Dhrumil is thinking..."):
-                        # Send user message to Gemini chat session
                         gemini_response = st.session_state.chat_session.send_message(transcript)
                         ai_response = gemini_response.text
 
                     st.session_state.display_messages.append({"role": "assistant", "content": ai_response})
-                    
-                    
-                    
+
                     # --- Text-to-Speech (TTS) via ElevenLabs Library ---
                     try:
                         with st.spinner("Dhrumil is speaking..."):
-                            if not ELEVENLABS_API_KEY: # Check if key was retrieved at all
-                                st.error("ElevenLabs API Key (TTS_API_KEY) is missing. Cannot generate voice.")
-                                st.stop() # Stop execution if key is missing
+                            if not elevenlabs_client:
+                                st.error("ElevenLabs client is not initialized. Cannot generate voice. Check TTS_API_KEY.")
+                                st.stop()
 
-                            # Use the ElevenLabs library's generate function
-                            speech_audio_bytes = generate(
+                            # CORRECTED CALL: Use text_to_speech.convert() method
+                            # Collect the generator output into a single bytes object
+                            audio_generator = elevenlabs_client.text_to_speech.convert(
                                 text=ai_response,
-                                voice=ELEVENLABS_VOICE_ID, # Use the predefined voice ID
-                                model="eleven_monolingual_v1" # Specify the model
-                                # You can also pass 'voice_settings' if needed: voice_settings={"stability": 0.5, "similarity_boost": 0.75}
+                                voice_id=ELEVENLABS_VOICE_ID, # Pass voice ID directly
+                                model_id="eleven_monolingual_v1", # Pass model ID directly
+                                voice_settings=VoiceSettings(stability=0.5, similarity_boost=0.75) # Optional settings
                             )
+                            # Convert generator to bytes-like object
+                            speech_audio_bytes = b"".join(chunk for chunk in audio_generator)
+
 
                             if speech_audio_bytes:
                                 st.audio(io.BytesIO(speech_audio_bytes), format="audio/mpeg", autoplay=True)
                             else:
                                 st.warning("No voice response generated by ElevenLabs library.")
 
-                    except Exception as e: # Catch any exception from ElevenLabs library
+                    except Exception as e:
                         st.error(f"Error generating Dhrumil's voice with ElevenLabs library: {e}")
-                    # Removed the requests.exceptions.RequestException specific catch as the library handles it.
 
                 except Exception as e:
                     st.error(f"Error while Dhrumil was thinking (Gemini API): {e}")
             else:
                 st.warning("Gemini model not initialized. Please check API key configuration.")
-        # No else for `if transcript:` as warning is handled inside
     except requests.exceptions.RequestException as e:
         st.error(f"Error transcribing your speech: {e}")
     except KeyError as e:
@@ -296,7 +296,6 @@ if recorded_audio_dict:
 st.markdown("---")
 # Add a "Clear Chat" button to reset the conversation
 if st.button("Clear Chat"):
-    # Reset both Gemini chat session and Streamlit display messages
     if gemini_model:
         st.session_state.chat_session = gemini_model.start_chat(history=[
             {"role": "user", "parts": [persona_instructions]},
@@ -309,7 +308,7 @@ if st.button("Clear Chat"):
     if st.session_state.chat_session:
         st.session_state.display_messages.append({"role": "assistant", "content": "Hello! I’m Dhrumil Pawar — so glad to meet you. Thanks for being here, and I’m excited to share a bit about myself and what I’ve built."})
 
-    st.session_state.recorder_key += 1 # Increment key to reset the mic_recorder
-    st.rerun() # Rerun the app to clear the displayed messages
+    st.session_state.recorder_key += 1
+    st.rerun()
 
 st.write("Ready for your next question!")
