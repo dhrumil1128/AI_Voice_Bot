@@ -16,7 +16,7 @@ load_dotenv()
 # Retrieve API keys from environment variables (from .env file locally)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
-ELEVENLABS_API_KEY = "sk_d236a1618106c62aa10de1ad9b09d0230734806fe47f8401"
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
 # --- Configure Google Gemini API ---
 if GEMINI_API_KEY:
