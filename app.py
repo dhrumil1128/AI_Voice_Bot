@@ -250,7 +250,7 @@ if recorded_audio_dict:
                     # --- Text-to-Speech (TTS) via Edge TTS ---
                     if ai_response: # Check if the response from Gemini is not empty
                         try:
-                            with st.spinner("Dhrumil is speaking... (using Edge TTS)"):
+                            with st.spinner("Dhrumil is speaking..."):
                                 # Create a temporary file to store the audio
                                 temp_file = "temp_edge_tts.mp3"
                                 
