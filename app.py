@@ -268,11 +268,11 @@ if recorded_audio_dict:
                     }
 
                     with st.spinner("Dhrumil is speaking..."): # Changed for persona
-                       speech_audio_bytes = generate(
-                        text=ai_response,
-                        voice=ELEVENLABS_VOICE_ID,
-                        model="eleven_monolingual_v1"
-                    )
+                        speech_audio_bytes = generate(
+                            text=ai_response,
+                            voice=ELEVENLABS_VOICE_ID,
+                            model="eleven_monolingual_v1"
+                        )
                         
                         if speech_audio_bytes:
                             st.audio(io.BytesIO(speech_audio_bytes), format="audio/mpeg", autoplay=True) # ElevenLabs typically returns MP3
