@@ -27,8 +27,8 @@ DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
 # --- Text-to-Speech (TTS) API (ElevenLabs) ---
 TTS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 # Confirmed active voice ID from your ElevenLabs console
-ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"
-TTS_API_URL = f"https://api.elevenlabs.io/v1/text-to-speech/UgBBYS2sOqTuMpoF3BR0"
+ELEVENLABS_VOICE_ID = "UgBBYS2sOqTuMpoF3BR0"
+TTS_API_URL = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
 
 
 # --- Streamlit Page Configuration ---
@@ -268,10 +268,11 @@ if recorded_audio_dict:
                     }
 
                     with st.spinner("Dhrumil is speaking..."): # Changed for persona
-                        tts_response = requests.post(TTS_API_URL, headers=tts_headers, json=tts_payload)
-                        tts_response.raise_for_status() # Raise HTTPError for bad responses
-
-                        speech_audio_bytes = tts_response.content
+                       speech_audio_bytes = generate(
+                        text=ai_response,
+                        voice=ELEVENLABS_VOICE_ID,
+                        model="eleven_monolingual_v1"
+                       )
                         
                         if speech_audio_bytes:
                             st.audio(io.BytesIO(speech_audio_bytes), format="audio/mpeg", autoplay=True) # ElevenLabs typically returns MP3
