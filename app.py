@@ -342,4 +342,4 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
-)  this is my i make ai voice person boat which is talk be half of me . so it is correct the AI voice persona ? in real world like if i am not presant then he is able to talk ?
+)  this is my i make ai voice person boat which is talk be half of me . so it is correct the AI voice persona ? in real world like if i am not presant then he is able to talk ?  this is my old code give me in chat 
