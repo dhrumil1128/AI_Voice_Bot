@@ -1,4 +1,4 @@
-'''import streamlit as st
+import streamlit as st
 import os
 import io
 import requests
@@ -25,29 +25,29 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 # --- Configure Google Gemini API ---
 gemini_model = None
 if GEMINI_API_KEY:
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
-    except Exception as e:
-        st.warning(f"Failed to configure Gemini API: {e}. Double-check your GEMINI_API_KEY's validity.")
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+    except Exception as e:
+        st.warning(f"Failed to configure Gemini API: {e}. Double-check your GEMINI_API_KEY's validity.")
 else:
-    st.info("💡 **Gemini API Key Missing:** The AI conversation will not work without it. Please add `GEMINI_API_KEY` to your environment variables or `.env` file (e.g., in Render's secrets).")
+    st.info("💡 **Gemini API Key Missing:** The AI conversation will not work without it. Please add `GEMINI_API_KEY` to your environment variables or `.env` file (e.g., in Render's secrets).")
 
 # --- Speech-to-Text (STT) API (Deepgram) ---
 DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
 if not DEEPGRAM_API_KEY:
-    st.info("💡 **Deepgram API Key Missing:** Speech-to-text will not work. Please add `DEEPGRAM_API_KEY` to your environment variables or `.env` file.")
+    st.info("💡 **Deepgram API Key Missing:** Speech-to-text will not work. Please add `DEEPGRAM_API_KEY` to your environment variables or `.env` file.")
 
 # --- Edge TTS Voice Configuration ---
 # Choose a male voice from Edge TTS. Common ones include:
 # en-US-GuyNeural, en-US-JasonNeural, en-US-ChristopherNeural
-EDGE_TTS_MALE_VOICE_ID = "en-US-GuyNeural" 
+EDGE_TTS_MALE_VOICE_ID = "en-US-GuyNeural" 
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
-    layout="centered",
-    page_title="Dhrumil's Voice Persona Bot",
-    initial_sidebar_state="collapsed"
+    layout="centered",
+    page_title="Dhrumil's Voice Persona Bot",
+    initial_sidebar_state="collapsed"
 )
 
 st.title("🗣️ Dhrumil's Voice Persona Bot")
@@ -181,388 +181,165 @@ Respond as Dhrumil would: friendly, helpful, professional, and reflecting Dhrumi
 # --- Initialize Chat History (for conversational memory) ---
 # UPDATED INITIAL GREETING TEXT HERE
 if "chat_session" not in st.session_state:
-    if gemini_model:
-        st.session_state.chat_session = gemini_model.start_chat(history=[
-            {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
-        ])
-    else:
-        st.session_state.chat_session = None
+    if gemini_model:
+        st.session_state.chat_session = gemini_model.start_chat(history=[
+            {"role": "user", "parts": [persona_instructions]},
+            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
+        ])
+    else:
+        st.session_state.chat_session = None
 
 if "display_messages" not in st.session_state:
-    st.session_state.display_messages = []
-    if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
+    st.session_state.display_messages = []
+    if st.session_state.chat_session:
+        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
 
 # --- Display Chat Messages from History ---
 for message in st.session_state.display_messages:
-    # UPDATED: Use custom avatar for assistant messages
-    avatar = "👨‍💻" if message["role"] == "assistant" else "user"
-    with st.chat_message(message["role"], avatar=avatar):
-        st.write(message["content"])
+    # UPDATED: Use custom avatar for assistant messages
+    avatar = "👨‍💻" if message["role"] == "assistant" else "user"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.write(message["content"])
 
 # --- Initialize recorder key for mic_recorder (NEW) ---
 if "recorder_key" not in st.session_state:
-    st.session_state.recorder_key = 0
+    st.session_state.recorder_key = 0
 
 # --- Voice Recording Component ---
 recorded_audio_dict = mic_recorder(
-    start_prompt="Start Recording",
-    stop_prompt="Stop Recording",
-    key=f"recorder_{st.session_state.recorder_key}",
-    format="wav"
+    start_prompt="Start Recording",
+    stop_prompt="Stop Recording",
+    key=f"recorder_{st.session_state.recorder_key}",
+    format="wav"
 )
 
 if recorded_audio_dict:
-    audio_bytes = recorded_audio_dict['bytes']
-    st.audio(io.BytesIO(audio_bytes), format="audio/wav")
+    audio_bytes = recorded_audio_dict['bytes']
+    st.audio(io.BytesIO(audio_bytes), format="audio/wav")
 
-    stt_data = None
-    ai_response = "I apologize, an error occurred."
+    stt_data = None
+    ai_response = "I apologize, an error occurred."
 
-    try:
-        # --- Speech-to-Text (STT) via Deepgram ---
-        with st.spinner("Transcribing your speech..."):
-            if not DEEPGRAM_API_KEY:
-                st.error("Deepgram API Key is not set. Please add it to your .env file or environment variables.")
-                st.stop()
+    try:
+        # --- Speech-to-Text (STT) via Deepgram ---
+        with st.spinner("Transcribing your speech..."):
+            if not DEEPGRAM_API_KEY:
+                st.error("Deepgram API Key is not set. Please add it to your .env file or environment variables.")
+                st.stop()
 
-            deepgram_headers = {
-                "Authorization": f"Token {DEEPGRAM_API_KEY}",
-                "Content-Type": "audio/wav"
-            }
+            deepgram_headers = {
+                "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                "Content-Type": "audio/wav"
+            }
 
-            deepgram_response = requests.post(DEEPGRAM_API_URL, headers=deepgram_headers, data=audio_bytes)
-            deepgram_response.raise_for_status()
-            stt_data = deepgram_response.json()
+            deepgram_response = requests.post(DEEPGRAM_API_URL, headers=deepgram_headers, data=audio_bytes)
+            deepgram_response.raise_for_status()
+            stt_data = deepgram_response.json()
 
-            transcript = stt_data['results']['channels'][0]['alternatives'][0].get('transcript', '').strip()
+            transcript = stt_data['results']['channels'][0]['alternatives'][0].get('transcript', '').strip()
 
-            if not transcript:
-                st.warning("Could not transcribe your audio. No text found.")
-                st.json(stt_data)
-                transcript = None
+            if not transcript:
+                st.warning("Could not transcribe your audio. No text found.")
+                st.json(stt_data)
+                transcript = None
 
-        if transcript:
-            st.info(f"You said: \"{transcript}\"")
-            st.session_state.display_messages.append({"role": "user", "content": transcript})
+        if transcript:
+            st.info(f"You said: \"{transcript}\"")
+            st.session_state.display_messages.append({"role": "user", "content": transcript})
 
-            # --- LLM (Gemini) ---
-            if gemini_model and st.session_state.chat_session:
-                try:
-                    with st.spinner("Dhrumil is thinking..."):
-                        gemini_response = st.session_state.chat_session.send_message(transcript)
-                        ai_response = gemini_response.text
+            # --- LLM (Gemini) ---
+            if gemini_model and st.session_state.chat_session:
+                try:
+                    with st.spinner("Dhrumil is thinking..."):
+                        gemini_response = st.session_state.chat_session.send_message(transcript)
+                        ai_response = gemini_response.text
 
-                    st.session_state.display_messages.append({"role": "assistant", "content": ai_response})
+                    st.session_state.display_messages.append({"role": "assistant", "content": ai_response})
 
-                    # --- Text-to-Speech (TTS) via Edge TTS ---
-                    if ai_response: # Check if the response from Gemini is not empty
-                        try:
-                            with st.spinner("Dhrumil is speaking..."):
-                                # Create a temporary file to store the audio
-                                temp_file = "temp_edge_tts.mp3"
-                                
-                                # Run Edge TTS synchronously by calling asyncio.run on the save method
-                                voice = edge_tts.Communicate(
-                                    text=ai_response,
-                                    voice=EDGE_TTS_MALE_VOICE_ID
-                                )
-                                
-                                # Save to file first (more reliable than streaming)
-                                # This directly saves the audio to the file
-                                asyncio.run(voice.save(temp_file))
-                                
-                                # Read the file and play it
-                                with open(temp_file, "rb") as f:
-                                    speech_audio_bytes = f.read()
-                                    st.audio(speech_audio_bytes, format="audio/mpeg", autoplay=True)
-                                
-                                # Clean up the temporary file
-                                os.remove(temp_file)
+                    # --- Text-to-Speech (TTS) via Edge TTS ---
+                    if ai_response: # Check if the response from Gemini is not empty
+                        try:
+                            with st.spinner("Dhrumil is speaking..."):
+                                # Create a temporary file to store the audio
+                                temp_file = "temp_edge_tts.mp3"
+                                
+                                # Run Edge TTS synchronously by calling asyncio.run on the save method
+                                voice = edge_tts.Communicate(
+                                    text=ai_response,
+                                    voice=EDGE_TTS_MALE_VOICE_ID
+                                )
+                                
+                                # Save to file first (more reliable than streaming)
+                                # This directly saves the audio to the file
+                                asyncio.run(voice.save(temp_file))
+                                
+                                # Read the file and play it
+                                with open(temp_file, "rb") as f:
+                                    speech_audio_bytes = f.read()
+                                    st.audio(speech_audio_bytes, format="audio/mpeg", autoplay=True)
+                                
+                                # Clean up the temporary file
+                                os.remove(temp_file)
 
-                        except Exception as e:
-                            st.error(f"Error generating Dhrumil's voice with Edge TTS: {e}")
-                    else:
-                        st.warning("Dhrumil has no voice response to generate (Gemini's response was empty).")
+                        except Exception as e:
+                            st.error(f"Error generating Dhrumil's voice with Edge TTS: {e}")
+                    else:
+                        st.warning("Dhrumil has no voice response to generate (Gemini's response was empty).")
 
-                except Exception as e:
-                    st.error(f"Error while Dhrumil was thinking (Gemini API): {e}")
-            else:
-                st.warning("Gemini model not initialized. Please check API key configuration.")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error transcribing your speech: {e}")
-    except KeyError as e:
-        st.error(f"Error parsing speech transcription (unexpected format): Missing key {e}. Full response: {stt_data}")
-    except Exception as e:
-        st.error(f"An unexpected error occurred during transcription: {e}")
+                except Exception as e:
+                    st.error(f"Error while Dhrumil was thinking (Gemini API): {e}")
+            else:
+                st.warning("Gemini model not initialized. Please check API key configuration.")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error transcribing your speech: {e}")
+    except KeyError as e:
+        st.error(f"Error parsing speech transcription (unexpected format): Missing key {e}. Full response: {stt_data}")
+    except Exception as e:
+        st.error(f"An unexpected error occurred during transcription: {e}")
 
 st.markdown("---")
 # Add a "Clear Chat" button to reset the conversation
 if st.button("Clear Chat"):
-    if gemini_model:
-        st.session_state.chat_session = gemini_model.start_chat(history=[
-            {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
-        ])
-    else:
-        st.session_state.chat_session = None
+    if gemini_model:
+        st.session_state.chat_session = gemini_model.start_chat(history=[
+            {"role": "user", "parts": [persona_instructions]},
+            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
+        ])
+    else:
+        st.session_state.chat_session = None
 
-    st.session_state.display_messages = []
-    if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
+    st.session_state.display_messages = []
+    if st.session_state.chat_session:
+        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
 
-    st.session_state.recorder_key += 1
-    st.rerun()
+    st.session_state.recorder_key += 1
+    st.rerun()
 
 st.write("Ready for your next question!")
 
 # --- FOOTER ---
 st.markdown("---") # A horizontal line to separate content from footer
 st.markdown(
-    """
-    <style>
-    .footer {
-        font-size: 0.8em;
-        text-align: center;
-        color: #888888;
-        margin-top: 30px;
-    }
-    .footer a {
-        color: #888888;
-        text-decoration: none;
-    }
-    .footer a:hover {
-        text-decoration: underline;
-    }
-    </style>
-    <div class="footer">
-        Dhrumil's Voice Persona Bot <br>
-        &copy; 2025 Dhrumil Pawar. All rights reserved. <br>
-    </div>
-    """,
-    unsafe_allow_html=True
-)'''
-
-
-# Test Code :
-
-import streamlit as st
-import os
-import io
-import requests
-from streamlit_mic_recorder import mic_recorder
-from dotenv import load_dotenv
-import google.generativeai as genai
-import asyncio # Needed for running async Edge TTS
-import edge_tts 
-
-# Load environment variables from .env file
-# Note: In a production environment, use st.secrets instead of .env
-load_dotenv() 
-
-# --- API Key & Endpoint Setup ---
-# *** IMPORTANT: Switch to st.secrets for deployment! ***
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
-DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY") 
-
-# --- Configure Google Gemini API (Same as before) ---
-gemini_model = None
-if GEMINI_API_KEY:
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
-    except Exception as e:
-        st.warning(f"Failed to configure Gemini API: {e}. Double-check your GEMINI_API_KEY's validity.")
-else:
-    st.info("💡 **Gemini API Key Missing:** The AI conversation will not work without it. Please add `GEMINI_API_KEY` to your environment variables or `.env` file.")
-
-# --- Speech-to-Text (STT) API (Deepgram) (Same as before) ---
-DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
-if not DEEPGRAM_API_KEY:
-    st.info("💡 **Deepgram API Key Missing:** Speech-to-text will not work.")
-
-# --- Edge TTS Voice Configuration (Same as before) ---
-EDGE_TTS_MALE_VOICE_ID = "en-US-GuyNeural"  
-
-# --- Streamlit Page Configuration ---
-st.set_page_config(
-    layout="wide", # Use 'wide' layout for a better presentation
-    page_title="Dhrumil's Voice Persona Agent",
-    initial_sidebar_state="collapsed"
-)
-
-st.title("🗣️ Dhrumil's Voice Persona Agent")
-
-# --- Persona Instructions (Kept the same, but simplified for brevity here) ---
-initial_greeting_text = "Hello! I'm Dhrumil Pawar. This bot showcases my AI and system development work. Feel free to ask about my projects, skills, or problem-solving approach. I'm eager to share!"
-persona_instructions = f"""... (All your detailed persona instructions go here) ..."""
-
-# --- Initialize Chat History (for conversational memory) ---
-if "chat_session" not in st.session_state:
-    if gemini_model:
-        st.session_state.chat_session = gemini_model.start_chat(history=[
-            {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": [initial_greeting_text]} 
-        ])
-    else:
-        st.session_state.chat_session = None
-
-if "display_messages" not in st.session_state:
-    st.session_state.display_messages = []
-    if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) 
-
-# --- Initialize recorder key for mic_recorder (NEW) ---
-if "recorder_key" not in st.session_state:
-    st.session_state.recorder_key = 0
-    
-# --- UI: Display Chat Messages in the main chat history area ---
-# *** NEW: Use columns to create a balanced chat view ***
-col1, col2, col3 = st.columns([1, 4, 1])
-
-with col2:
-    st.markdown("### Conversation History")
-    # Display the conversation history
-    for message in st.session_state.display_messages:
-        avatar = "👨‍💻" if message["role"] == "assistant" else "user"
-        with st.chat_message(message["role"], avatar=avatar):
-            st.write(message["content"])
-
-    st.markdown("---")
-
-    # --- VOICE INTERACTION SECTION ---
-    st.markdown("### Speak to Dhrumil's Digital Agent")
-    st.markdown("**Instructions:** Click the 'Start recording' button, ask your question, then click 'Stop recording'.")
-
-    # Center the microphone button using another set of columns
-    mic_col1, mic_col2, mic_col3 = st.columns([1, 2, 1])
-    with mic_col2:
-        # --- Voice Recording Component ---
-        recorded_audio_dict = mic_recorder(
-            start_prompt="🔴 Start Recording (Speak Now)",
-            stop_prompt="■ Stop Recording (Processing...)",
-            key=f"recorder_{st.session_state.recorder_key}",
-            format="wav"
-        )
-
-# --- Logic to process recording (Unchanged, but kept below the UI for clarity) ---
-if recorded_audio_dict:
-    audio_bytes = recorded_audio_dict['bytes']
-    stt_data = None
-    
-    # Place the audio player right after the button
-    st.audio(io.BytesIO(audio_bytes), format="audio/wav")
-
-    with st.spinner("Transcribing your speech..."):
-        # --- Speech-to-Text (STT) via Deepgram ---
-        # (Full Deepgram and Gemini logic is the same as your original code)
-        try:
-            if not DEEPGRAM_API_KEY:
-                st.error("Deepgram API Key is not set.")
-                st.stop()
-
-            deepgram_headers = {
-                "Authorization": f"Token {DEEPGRAM_API_KEY}",
-                "Content-Type": "audio/wav"
-            }
-
-            deepgram_response = requests.post(DEEPGRAM_API_URL, headers=deepgram_headers, data=audio_bytes)
-            deepgram_response.raise_for_status()
-            stt_data = deepgram_response.json()
-            transcript = stt_data['results']['channels'][0]['alternatives'][0].get('transcript', '').strip()
-
-            if not transcript:
-                st.warning("Could not transcribe your audio. No text found.")
-                # Increment key to allow immediate re-recording
-                st.session_state.recorder_key += 1
-                st.rerun()
-                
-            st.info(f"You said: \"{transcript}\"")
-            st.session_state.display_messages.append({"role": "user", "content": transcript})
-
-            # --- LLM (Gemini) ---
-            if gemini_model and st.session_state.chat_session:
-                with st.spinner("Dhrumil is thinking..."):
-                    gemini_response = st.session_state.chat_session.send_message(transcript)
-                    ai_response = gemini_response.text
-
-                st.session_state.display_messages.append({"role": "assistant", "content": ai_response})
-
-                # --- Text-to-Speech (TTS) via Edge TTS ---
-                if ai_response:
-                    try:
-                        with st.spinner("Dhrumil is speaking..."):
-                            temp_file = "temp_edge_tts.mp3"
-                            voice = edge_tts.Communicate(
-                                text=ai_response,
-                                voice=EDGE_TTS_MALE_VOICE_ID
-                            )
-                            asyncio.run(voice.save(temp_file))
-                            with open(temp_file, "rb") as f:
-                                speech_audio_bytes = f.read()
-                                st.audio(speech_audio_bytes, format="audio/mpeg", autoplay=True)
-                            os.remove(temp_file)
-                    except Exception as e:
-                        st.error(f"Error generating Dhrumil's voice with Edge TTS: {e}")
-                
-            # After successful processing, force a re-run to update the chat history
-            # and refresh the mic recorder
-            st.session_state.recorder_key += 1
-            st.rerun()
-
-        except requests.exceptions.RequestException as e:
-            st.error(f"Error transcribing your speech: Deepgram API failed: {e}")
-        except Exception as e:
-            st.error(f"An unexpected error occurred: {e}")
-
-# --- Control Buttons (Clear Chat) ---
-st.markdown("---")
-# Center the button in the 'wide' layout
-clear_col1, clear_col2, clear_col3 = st.columns([1, 4, 1])
-
-with clear_col2:
-    if st.button("Clear Conversation (Reset Agent)"):
-        if gemini_model:
-            st.session_state.chat_session = gemini_model.start_chat(history=[
-                {"role": "user", "parts": [persona_instructions]},
-                {"role": "model", "parts": [initial_greeting_text]}
-            ])
-        else:
-            st.session_state.chat_session = None
-
-        st.session_state.display_messages = []
-        if st.session_state.chat_session:
-            st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) 
-
-        st.session_state.recorder_key += 1
-        st.rerun()
-
-    st.write("Ready for your next question!")
-
-# --- FOOTER ---
-st.markdown("---") 
-st.markdown(
-    """
-    <style>
-    .footer {
-        font-size: 0.8em;
-        text-align: center;
-        color: #888888;
-        margin-top: 30px;
-    }
-    .footer a {
-        color: #888888;
-        text-decoration: none;
-    }
-    .footer a:hover {
-        text-decoration: underline;
-    }
-    </style>
-    <div class="footer">
-        Dhrumil's Voice Persona Agent <br>
-        &copy; 2025 Dhrumil Pawar. All rights reserved. <br>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    """
+    <style>
+    .footer {
+        font-size: 0.8em;
+        text-align: center;
+        color: #888888;
+        margin-top: 30px;
+    }
+    .footer a {
+        color: #888888;
+        text-decoration: none;
+    }
+    .footer a:hover {
+        text-decoration: underline;
+    }
+    </style>
+    <div class="footer">
+        Dhrumil's Voice Persona Bot <br>
+        &copy; 2025 Dhrumil Pawar. All rights reserved. <br>
+    </div>
+    """,
+    unsafe_allow_html=True
+)  this is my i make ai voice person boat which is talk be half of me . so it is correct the AI voice persona ? in real world like if i am not presant then he is able to talk ?
