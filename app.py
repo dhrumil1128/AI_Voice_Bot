@@ -25,29 +25,29 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 # --- Configure Google Gemini API ---
 gemini_model = None
 if GEMINI_API_KEY:
-  try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
-    except Exception as e:
-        st.warning(f"Failed to configure Gemini API: {e}. Double-check your GEMINI_API_KEY's validity.")
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+    except Exception as e:
+        st.warning(f"Failed to configure Gemini API: {e}. Double-check your GEMINI_API_KEY's validity.")
 else:
-    st.info("💡 **Gemini API Key Missing:** The AI conversation will not work without it. Please add `GEMINI_API_KEY` to your environment variables or `.env` file (e.g., in Render's secrets).")
+    st.info("💡 **Gemini API Key Missing:** The AI conversation will not work without it. Please add `GEMINI_API_KEY` to your environment variables or `.env` file (e.g., in Render's secrets).")
 
 # --- Speech-to-Text (STT) API (Deepgram) ---
 DEEPGRAM_API_URL = "https://api.deepgram.com/v1/listen?model=base"
 if not DEEPGRAM_API_KEY:
-    st.info("💡 **Deepgram API Key Missing:** Speech-to-text will not work. Please add `DEEPGRAM_API_KEY` to your environment variables or `.env` file.")
+    st.info("💡 **Deepgram API Key Missing:** Speech-to-text will not work. Please add `DEEPGRAM_API_KEY` to your environment variables or `.env` file.")
 
 # --- Edge TTS Voice Configuration ---
 # Choose a male voice from Edge TTS. Common ones include:
 # en-US-GuyNeural, en-US-JasonNeural, en-US-ChristopherNeural
-EDGE_TTS_MALE_VOICE_ID = "en-US-GuyNeural" 
+EDGE_TTS_MALE_VOICE_ID = "en-US-GuyNeural"
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
-    layout="centered",
-    page_title="Dhrumil's Voice Persona Bot",
-    initial_sidebar_state="collapsed"
+    layout="centered",
+    page_title="Dhrumil's Voice Persona Bot",
+    initial_sidebar_state="collapsed"
 )
 
 st.title("🗣️ Dhrumil's Voice Persona Bot")
@@ -155,7 +155,7 @@ These are Dhrumil's prepared answers to common technical and company-specific qu
 **🎤 Bonus: “Anything else you’d like to add?”**
 “Yeah — in short, I’ve had real hands-on experience with the full AI/ML pipeline — from writing clean Python code to building intelligent agents and visual dashboards. I love using tech to solve real problems, and I’ve built, shipped, and improved projects that reflect that.”
 
-**� Q: “What do you know about Home.LLC?”**
+**🏡 Q: “What do you know about Home.LLC?”**
 “Sure — what really stood out to me about Home.LLC is the mission. You're helping people who are financially ready for homeownership, but just can’t afford the down payment — and that’s a real, widespread problem.
 I love that instead of offering loans, you partner with homebuyers by investing alongside them — and then share in the home’s future value. It’s such a smart and ethical model. It supports people without locking them into debt, and that’s rare in today’s financial space.
 I also know the company was founded in 2019, and you’ve built a focused, mission-driven team of about 30 to 50 people. The size and structure suggest a lot of agility, innovation, and trust in each individual — and that’s the kind of environment where I thrive.”
@@ -181,165 +181,165 @@ Respond as Dhrumil would: friendly, helpful, professional, and reflecting Dhrumi
 # --- Initialize Chat History (for conversational memory) ---
 # UPDATED INITIAL GREETING TEXT HERE
 if "chat_session" not in st.session_state:
-    if gemini_model:
-        st.session_state.chat_session = gemini_model.start_chat(history=[
-            {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
-        ])
-    else:
-        st.session_state.chat_session = None
+    if gemini_model:
+        st.session_state.chat_session = gemini_model.start_chat(history=[
+            {"role": "user", "parts": [persona_instructions]},
+            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
+        ])
+    else:
+        st.session_state.chat_session = None
 
 if "display_messages" not in st.session_state:
-    st.session_state.display_messages = []
-    if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
+    st.session_state.display_messages = []
+    if st.session_state.chat_session:
+        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
 
 # --- Display Chat Messages from History ---
 for message in st.session_state.display_messages:
-    # UPDATED: Use custom avatar for assistant messages
-    avatar = "👨‍💻" if message["role"] == "assistant" else "user"
-    with st.chat_message(message["role"], avatar=avatar):
-        st.write(message["content"])
+    # UPDATED: Use custom avatar for assistant messages
+    avatar = "👨‍💻" if message["role"] == "assistant" else "user"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.write(message["content"])
 
 # --- Initialize recorder key for mic_recorder (NEW) ---
 if "recorder_key" not in st.session_state:
-    st.session_state.recorder_key = 0
+    st.session_state.recorder_key = 0
 
 # --- Voice Recording Component ---
 recorded_audio_dict = mic_recorder(
-    start_prompt="Start Recording",
-    stop_prompt="Stop Recording",
-    key=f"recorder_{st.session_state.recorder_key}",
-    format="wav"
+    start_prompt="Start Recording",
+    stop_prompt="Stop Recording",
+    key=f"recorder_{st.session_state.recorder_key}",
+    format="wav"
 )
 
 if recorded_audio_dict:
-    audio_bytes = recorded_audio_dict['bytes']
-    st.audio(io.BytesIO(audio_bytes), format="audio/wav")
+    audio_bytes = recorded_audio_dict['bytes']
+    st.audio(io.BytesIO(audio_bytes), format="audio/wav")
 
-    stt_data = None
-    ai_response = "I apologize, an error occurred."
+    stt_data = None
+    ai_response = "I apologize, an error occurred."
 
-    try:
-        # --- Speech-to-Text (STT) via Deepgram ---
-        with st.spinner("Transcribing your speech..."):
-            if not DEEPGRAM_API_KEY:
-                st.error("Deepgram API Key is not set. Please add it to your .env file or environment variables.")
-                st.stop()
+    try:
+        # --- Speech-to-Text (STT) via Deepgram ---
+        with st.spinner("Transcribing your speech..."):
+            if not DEEPGRAM_API_KEY:
+                st.error("Deepgram API Key is not set. Please add it to your .env file or environment variables.")
+                st.stop()
 
-            deepgram_headers = {
-                "Authorization": f"Token {DEEPGRAM_API_KEY}",
-                "Content-Type": "audio/wav"
-            }
+            deepgram_headers = {
+                "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                "Content-Type": "audio/wav"
+            }
 
-            deepgram_response = requests.post(DEEPGRAM_API_URL, headers=deepgram_headers, data=audio_bytes)
-            deepgram_response.raise_for_status()
-            stt_data = deepgram_response.json()
+            deepgram_response = requests.post(DEEPGRAM_API_URL, headers=deepgram_headers, data=audio_bytes)
+            deepgram_response.raise_for_status()
+            stt_data = deepgram_response.json()
 
-            transcript = stt_data['results']['channels'][0]['alternatives'][0].get('transcript', '').strip()
+            transcript = stt_data['results']['channels'][0]['alternatives'][0].get('transcript', '').strip()
 
-            if not transcript:
-                st.warning("Could not transcribe your audio. No text found.")
-                st.json(stt_data)
-                transcript = None
+            if not transcript:
+                st.warning("Could not transcribe your audio. No text found.")
+                st.json(stt_data)
+                transcript = None
 
-        if transcript:
-            st.info(f"You said: \"{transcript}\"")
-            st.session_state.display_messages.append({"role": "user", "content": transcript})
+        if transcript:
+            st.info(f"You said: \"{transcript}\"")
+            st.session_state.display_messages.append({"role": "user", "content": transcript})
 
-            # --- LLM (Gemini) ---
-            if gemini_model and st.session_state.chat_session:
-                try:
-                    with st.spinner("Dhrumil is thinking..."):
-                        gemini_response = st.session_state.chat_session.send_message(transcript)
-                        ai_response = gemini_response.text
+            # --- LLM (Gemini) ---
+            if gemini_model and st.session_state.chat_session:
+                try:
+                    with st.spinner("Dhrumil is thinking..."):
+                        gemini_response = st.session_state.chat_session.send_message(transcript)
+                        ai_response = gemini_response.text
 
-                    st.session_state.display_messages.append({"role": "assistant", "content": ai_response})
+                    st.session_state.display_messages.append({"role": "assistant", "content": ai_response})
 
-                    # --- Text-to-Speech (TTS) via Edge TTS ---
-                    if ai_response: # Check if the response from Gemini is not empty
-                        try:
-                            with st.spinner("Dhrumil is speaking..."):
-                                # Create a temporary file to store the audio
-                                temp_file = "temp_edge_tts.mp3"
-                                
-                                # Run Edge TTS synchronously by calling asyncio.run on the save method
-                                voice = edge_tts.Communicate(
-                                    text=ai_response,
-                                    voice=EDGE_TTS_MALE_VOICE_ID
-                                )
-                                
-                                # Save to file first (more reliable than streaming)
-                                # This directly saves the audio to the file
-                                asyncio.run(voice.save(temp_file))
-                                
-                                # Read the file and play it
-                                with open(temp_file, "rb") as f:
-                                    speech_audio_bytes = f.read()
-                                    st.audio(speech_audio_bytes, format="audio/mpeg", autoplay=True)
-                                
-                                # Clean up the temporary file
-                                os.remove(temp_file)
+                    # --- Text-to-Speech (TTS) via Edge TTS ---
+                    if ai_response: # Check if the response from Gemini is not empty
+                        try:
+                            with st.spinner("Dhrumil is speaking..."):
+                                # Create a temporary file to store the audio
+                                temp_file = "temp_edge_tts.mp3"
+                                
+                                # Run Edge TTS synchronously by calling asyncio.run on the save method
+                                voice = edge_tts.Communicate(
+                                    text=ai_response,
+                                    voice=EDGE_TTS_MALE_VOICE_ID
+                                )
+                                
+                                # Save to file first (more reliable than streaming)
+                                # This directly saves the audio to the file
+                                asyncio.run(voice.save(temp_file))
+                                
+                                # Read the file and play it
+                                with open(temp_file, "rb") as f:
+                                    speech_audio_bytes = f.read()
+                                    st.audio(speech_audio_bytes, format="audio/mpeg", autoplay=True)
+                                
+                                # Clean up the temporary file
+                                os.remove(temp_file)
 
-                        except Exception as e:
-                            st.error(f"Error generating Dhrumil's voice with Edge TTS: {e}")
-                    else:
-                        st.warning("Dhrumil has no voice response to generate (Gemini's response was empty).")
+                        except Exception as e:
+                            st.error(f"Error generating Dhrumil's voice with Edge TTS: {e}")
+                    else:
+                        st.warning("Dhrumil has no voice response to generate (Gemini's response was empty).")
 
-                except Exception as e:
-                    st.error(f"Error while Dhrumil was thinking (Gemini API): {e}")
-            else:
-                st.warning("Gemini model not initialized. Please check API key configuration.")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error transcribing your speech: {e}")
-    except KeyError as e:
-        st.error(f"Error parsing speech transcription (unexpected format): Missing key {e}. Full response: {stt_data}")
-    except Exception as e:
-        st.error(f"An unexpected error occurred during transcription: {e}")
+                except Exception as e:
+                    st.error(f"Error while Dhrumil was thinking (Gemini API): {e}")
+            else:
+                st.warning("Gemini model not initialized. Please check API key configuration.")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error transcribing your speech: {e}")
+    except KeyError as e:
+        st.error(f"Error parsing speech transcription (unexpected format): Missing key {e}. Full response: {stt_data}")
+    except Exception as e:
+        st.error(f"An unexpected error occurred during transcription: {e}")
 
 st.markdown("---")
 # Add a "Clear Chat" button to reset the conversation
 if st.button("Clear Chat"):
-    if gemini_model:
-        st.session_state.chat_session = gemini_model.start_chat(history=[
-            {"role": "user", "parts": [persona_instructions]},
-            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
-        ])
-    else:
-        st.session_state.chat_session = None
+    if gemini_model:
+        st.session_state.chat_session = gemini_model.start_chat(history=[
+            {"role": "user", "parts": [persona_instructions]},
+            {"role": "model", "parts": [initial_greeting_text]} # Use the new greeting variable
+        ])
+    else:
+        st.session_state.chat_session = None
 
-    st.session_state.display_messages = []
-    if st.session_state.chat_session:
-        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
+    st.session_state.display_messages = []
+    if st.session_state.chat_session:
+        st.session_state.display_messages.append({"role": "assistant", "content": initial_greeting_text}) # Use the new greeting variable
 
-    st.session_state.recorder_key += 1
-    st.rerun()
+    st.session_state.recorder_key += 1
+    st.rerun()
 
 st.write("Ready for your next question!")
 
 # --- FOOTER ---
 st.markdown("---") # A horizontal line to separate content from footer
 st.markdown(
-    """
-    <style>
-    .footer {
-        font-size: 0.8em;
-        text-align: center;
-        color: #888888;
-        margin-top: 30px;
-    }
-    .footer a {
-        color: #888888;
-        text-decoration: none;
-    }
-    .footer a:hover {
-        text-decoration: underline;
-    }
-    </style>
-    <div class="footer">
-        Dhrumil's Voice Persona Bot <br>
-        &copy; 2025 Dhrumil Pawar. All rights reserved. <br>
-    </div>
-    """,
-    unsafe_allow_html=True
-)  this is my i make ai voice person boat which is talk be half of me . so it is correct the AI voice persona ? in real world like if i am not presant then he is able to talk ?  this is my old code give me in chat 
+    """
+    <style>
+    .footer {
+        font-size: 0.8em;
+        text-align: center;
+        color: #888888;
+        margin-top: 30px;
+    }
+    .footer a {
+        color: #888888;
+        text-decoration: none;
+    }
+    .footer a:hover {
+        text-decoration: underline;
+    }
+    </style>
+    <div class="footer">
+        Dhrumil's Voice Persona Bot <br>
+        &copy; 2025 Dhrumil Pawar. All rights reserved. <br>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
