@@ -443,9 +443,7 @@ with col2:
             start_prompt="🔴 Start Recording (Speak Now)",
             stop_prompt="■ Stop Recording (Processing...)",
             key=f"recorder_{st.session_state.recorder_key}",
-            format="wav",
-            # Add a style to make the button look more prominent
-            just_audio=False
+            format="wav"
         )
 
 # --- Logic to process recording (Unchanged, but kept below the UI for clarity) ---
