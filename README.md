@@ -2,8 +2,6 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat-square\&logo=python)
 ![Streamlit](https://img.shields.io/badge/Streamlit-✅-FF4B4B?style=flat-square\&logo=streamlit)
-![Whisper](https://img.shields.io/badge/Whisper-Speech-to-Text-purple?style=flat-square)
-![TTS](https://img.shields.io/badge/Text-to-Speech-Enabled-orange?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
 ---
@@ -18,14 +16,14 @@ This README provides a full, production-style documentation similar to the refer
 
 ## ✨ Features
 
-* 🎤 **Microphone Recording** (browser-based)
-* 📁 **Upload Audio Files** (WAV/MP3)
-* 🗣️ **Speech-to-Text** using Whisper or provider API
-* 🤖 **LLM/Text Processing** using configurable logic (OpenAI/Gemini/local)
-* 🔊 **Text-to-Speech Reply** (pyttsx3 / gTTS / provider TTS)
-* 💬 **Conversation History** within Streamlit
-* 📜 **Transcript View** for STT output
-* 🌐 **Simple UI & Real-Time Interaction**
+*  **Microphone Recording** (browser-based)
+*  **Upload Audio Files** (WAV/MP3)
+*  **Speech-to-Text** using Whisper or provider API
+*  **LLM/Text Processing** using configurable logic (OpenAI/Gemini/local)
+*  **Text-to-Speech Reply** (pyttsx3 / gTTS / provider TTS)
+*  **Conversation History** within Streamlit
+*  **Transcript View** for STT output
+*  **Simple UI & Real-Time Interaction**
 
 ---
 
@@ -53,38 +51,36 @@ AI_Voice_Bot/
 ├─ requirements.txt      # Python dependencies
 ├─ LICENSE               # MIT License
 ├─ README.md             # This documentation
-├─ /assets               # Optional: audio/images/icons
-├─ /utils                # Optional: helper modules
-└─ /models               # Optional: offline Whisper models
+             
 ```
 
 ---
 
-## ⚙️ How It Works (Architecture Overview)
+##  How It Works (Architecture Overview)
 
-### 1️⃣ **Audio Capture**
+### 1️ **Audio Capture**
 
 * User speaks through the microphone.
 * The app stores audio temporarily.
 
-### 2️⃣ **Speech-to-Text**
+###  **Speech-to-Text**
 
 * Whisper or another STT provider transcribes the audio.
 * The transcription is shown to the user and passed forward.
 
-### 3️⃣ **Text Processing / LLM**
+###  **Text Processing / LLM**
 
 * The transcript is processed:
 
   * By a rule-based function, **or**
   * Sent to an LLM (OpenAI, Gemini, etc.) for response generation.
 
-### 4️⃣ **Text-to-Speech Output**
+###  **Text-to-Speech Output**
 
 * The response text is synthesized via TTS.
 * Audio is played back directly in the Streamlit UI.
 
-### 5️⃣ **Display & State Management**
+###  **Display & State Management**
 
 * Streamlit Session State maintains:
 
@@ -94,7 +90,7 @@ AI_Voice_Bot/
 
 ---
 
-## 💻 Local Setup
+## Local Setup
 
 ### 1. Clone the Repository
 
