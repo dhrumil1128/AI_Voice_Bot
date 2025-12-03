@@ -1,7 +1,7 @@
 # AI Voice Bot  
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat-square\&logo=python)
-![Streamlit](https://img.shields.io/badge/Streamlit-✅-FF4B4B?style=flat-square\&logo=streamlit)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square\&logo=streamlit)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
 ---
